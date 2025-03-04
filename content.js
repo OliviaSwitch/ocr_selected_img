@@ -1,11 +1,13 @@
 // 接收来自background script的消息
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "showOcrResult") {
+    // 移除处理中的通知
+    removeNotification('ocr-processing-notification');
     // 显示OCR结果
     showOcrResult(message.result);
   } else if (message.action === "showNotification") {
     // 显示通知消息
-    showNotification(message.message);
+    showNotification(message.message, message.notificationId, message.persistent);
   }
 });
 
@@ -157,8 +159,8 @@ function addOcrButtonToImage(img) {
 
 // 处理图片OCR
 function processImage(imageUrl) {
-  // 显示加载中通知
-  showNotification('正在识别图片中的文字...');
+  // 显示持续性加载中通知
+  showNotification('正在识别图片中的文字...', 'ocr-processing-notification', true);
   
   // 发送消息到background script处理OCR
   chrome.runtime.sendMessage({
@@ -294,8 +296,22 @@ function removeExistingResultBox() {
 }
 
 // 显示通知消息
-function showNotification(message) {
+function showNotification(message, notificationId = null, persistent = false) {
+  // 如果提供了ID且通知已存在，则更新内容
+  const existingNotification = notificationId ? document.getElementById(notificationId) : null;
+  
+  if (existingNotification) {
+    existingNotification.textContent = message;
+    return;
+  }
+  
   const notification = document.createElement('div');
+  
+  // 如果提供了ID，设置元素ID
+  if (notificationId) {
+    notification.id = notificationId;
+  }
+  
   notification.style.cssText = `
     position: fixed;
     top: 20px;
@@ -309,10 +325,51 @@ function showNotification(message) {
     font-size: 14px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   `;
-  notification.textContent = message;
+  
+  if (persistent) {
+    // 为持续性通知添加加载动画
+    const spinnerElement = document.createElement('div');
+    spinnerElement.className = 'ocr-spinner';
+    spinnerElement.style.cssText = `
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      margin-right: 8px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: ocr-spin 1s linear infinite;
+    `;
+    
+    notification.appendChild(spinnerElement);
+    
+    const textElement = document.createElement('span');
+    textElement.textContent = message;
+    notification.appendChild(textElement);
+  } else {
+    notification.textContent = message;
+  }
+  
   document.body.appendChild(notification);
   
-  setTimeout(() => {
+  // 如果不是持续显示的通知，设置自动消失
+  if (!persistent) {
+    setTimeout(() => {
+      notification.style.opacity = '0';
+      notification.style.transition = 'opacity 0.5s ease';
+      setTimeout(() => {
+        if (notification.parentNode) {
+          document.body.removeChild(notification);
+        }
+      }, 500);
+    }, 3000);
+  }
+}
+
+// 移除特定ID的通知
+function removeNotification(notificationId) {
+  const notification = document.getElementById(notificationId);
+  if (notification) {
     notification.style.opacity = '0';
     notification.style.transition = 'opacity 0.5s ease';
     setTimeout(() => {
@@ -320,7 +377,7 @@ function showNotification(message) {
         document.body.removeChild(notification);
       }
     }, 500);
-  }, 3000);
+  }
 }
 
 // 使元素可拖动
@@ -486,6 +543,20 @@ function addCustomStyles() {
       border-width: 5px;
       border-style: solid;
       border-color: transparent transparent transparent rgba(0, 0, 0, 0.8);
+    }
+    
+    /* 添加加载动画 */
+    @keyframes ocr-spin {
+      to { transform: rotate(360deg); }
+    }
+    .ocr-spinner {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: ocr-spin 1s linear infinite;
     }
   `;
   document.head.appendChild(styleElement);
