@@ -64,6 +64,12 @@ function addOcrButtonToImage(img) {
   const svgURL = chrome.runtime.getURL('images/icon.svg');
   ocrButton.innerHTML = `<img src="${svgURL}" class="ocr-icon" alt="OCR">`;
   
+  // 添加提示文字元素
+  const tooltip = document.createElement('div');
+  tooltip.className = 'ocr-tooltip';
+  tooltip.textContent = 'OCR识别图片';
+  ocrButton.appendChild(tooltip);
+  
   // 设置按钮的样式
   ocrButton.style.cssText = `
     position: absolute;
@@ -113,6 +119,32 @@ function addOcrButtonToImage(img) {
 
   wrapper.addEventListener('mouseleave', function() {
     ocrButton.style.opacity = '0';
+  });
+
+  // 判断按钮位置并设置tooltip方向
+  ocrButton.addEventListener('mouseenter', function() {
+    // 获取按钮相对于图片的位置
+    const buttonRect = ocrButton.getBoundingClientRect();
+    const wrapperRect = wrapper.getBoundingClientRect();
+    
+    // 清除所有可能的方向类
+    tooltip.classList.remove('tooltip-top', 'tooltip-right', 'tooltip-bottom', 'tooltip-left');
+    
+    // 判断按钮位置并设置tooltip方向
+    // 默认是从底部显示(tooltip-top)，但如果按钮靠近底部，则从顶部显示
+    if (buttonRect.top - wrapperRect.top < 40) {
+      // 按钮靠近图片顶部，tooltip向下显示
+      tooltip.classList.add('tooltip-bottom');
+    } else if (wrapperRect.right - buttonRect.right < 40) {
+      // 按钮靠近图片右边，tooltip向左显示
+      tooltip.classList.add('tooltip-left');
+    } else if (buttonRect.right - wrapperRect.left < 40) {
+      // 按钮靠近图片左边，tooltip向右显示
+      tooltip.classList.add('tooltip-right');
+    } else {
+      // 默认向上显示
+      tooltip.classList.add('tooltip-top');
+    }
   });
 
   // 点击OCR按钮时处理图片
@@ -365,6 +397,95 @@ function addCustomStyles() {
       width: 16px;
       height: 16px;
       filter: invert(1);
+    }
+    .ocr-tooltip {
+      position: absolute;
+      background-color: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      white-space: nowrap;
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+    .ocr-float-button:hover .ocr-tooltip {
+      visibility: visible;
+      opacity: 1;
+    }
+    
+    /* 向上显示的tooltip（默认） */
+    .ocr-tooltip.tooltip-top {
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      margin-bottom: 5px;
+    }
+    .ocr-tooltip.tooltip-top::after {
+      content: "";
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      margin-left: -5px;
+      border-width: 5px;
+      border-style: solid;
+      border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent;
+    }
+    
+    /* 向右显示的tooltip */
+    .ocr-tooltip.tooltip-right {
+      left: 100%;
+      top: 50%;
+      transform: translateY(-50%);
+      margin-left: 5px;
+    }
+    .ocr-tooltip.tooltip-right::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      right: 100%;
+      margin-top: -5px;
+      border-width: 5px;
+      border-style: solid;
+      border-color: transparent rgba(0, 0, 0, 0.8) transparent transparent;
+    }
+    
+    /* 向下显示的tooltip */
+    .ocr-tooltip.tooltip-bottom {
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      margin-top: 5px;
+    }
+    .ocr-tooltip.tooltip-bottom::after {
+      content: "";
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      margin-left: -5px;
+      border-width: 5px;
+      border-style: solid;
+      border-color: transparent transparent rgba(0, 0, 0, 0.8) transparent;
+    }
+    
+    /* 向左显示的tooltip */
+    .ocr-tooltip.tooltip-left {
+      right: 100%;
+      top: 50%;
+      transform: translateY(-50%);
+      margin-right: 5px;
+    }
+    .ocr-tooltip.tooltip-left::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 100%;
+      margin-top: -5px;
+      border-width: 5px;
+      border-style: solid;
+      border-color: transparent transparent transparent rgba(0, 0, 0, 0.8);
     }
   `;
   document.head.appendChild(styleElement);
