@@ -10,6 +10,11 @@ chrome.runtime.onInstalled.addListener(() => {
 // 处理右键菜单点击事件
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === "ocrSelectedImage") {
+    // 在处理图片前先发送通知消息
+    chrome.tabs.sendMessage(tab.id, {
+      action: "showNotification",
+      message: "正在识别图片中的文字..."
+    });
     // 直接发送图片URL到background处理
     processImageUrl(info.srcUrl, tab.id);
   }
