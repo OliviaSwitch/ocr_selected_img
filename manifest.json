@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "description": "Extract text from selected images on web pages",
   "permissions": ["contextMenus", "activeTab", "storage"],
-  "host_permissions": ["<all_urls>", "https://test-qwen-cor.aughumes8.workers.dev/*"],
+  "host_permissions": ["<all_urls>"],
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
