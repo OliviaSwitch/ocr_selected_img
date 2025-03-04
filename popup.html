@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>OCR Selected Image</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <h1>OCR Selected Image</h1>
+    <p>右键点击网页上的图片，然后选择"OCR识别此图片"选项</p>
+    <div class="settings">
+      <h2>设置</h2>
+      <div class="setting-item">
+        <label for="apiUrl">OCR API地址:</label>
+        <input type="text" id="apiUrl" placeholder="输入OCR API的URL" value="https://test-qwen-cor.aughumes8.workers.dev/api/recognize/url">
+      </div>
+      <div class="setting-item">
+        <label for="customCookie">自定义Cookie:</label>
+        <input type="text" id="customCookie" placeholder="输入x-custom-cookie的值">
+      </div>
+      <button id="saveSettings">保存设置</button>
+      <div id="savedMessage" class="hidden">设置已保存!</div>
+      <div class="api-info">
+        <p class="info-text">本插件适配:</p>
+        <p><a href="https://github.com/Cunninger/ocr-based-qwen" target="_blank">ocr-based-qwen</a> - 基于通义千问的OCR识别服务</p>
+        <p class="info-text">请参考项目说明获取Cookie值和API地址</p>
+      </div>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
