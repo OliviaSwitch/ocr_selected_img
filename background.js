@@ -90,8 +90,12 @@ async function processImageUrl(imageUrl, tabId) {
   });
 }
 
-// 接收来自content script的消息 - 保持此部分以处理可能的其他消息
+// 接收来自content script的消息
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === "processImage" && message.imageUrl) {
+    // 处理来自悬浮按钮的OCR请求
+    processImageUrl(message.imageUrl, sender.tab.id);
+  }
   // 处理其他可能的消息类型
   return true;
 });

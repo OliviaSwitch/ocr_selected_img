@@ -32,6 +32,15 @@ h2 {
   gap: 5px;
 }
 
+.setting-item.checkbox {
+  flex-direction: row;
+  align-items: center;
+}
+
+.setting-item.checkbox input[type="checkbox"] {
+  margin-right: 5px;
+}
+
 input[type="text"] {
   padding: 5px;
   border: 1px solid #ccc;

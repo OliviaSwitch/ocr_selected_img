@@ -9,6 +9,132 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
+// 当页面加载完成后，添加悬浮OCR按钮到所有图片
+document.addEventListener('DOMContentLoaded', addOcrButtonsToImages);
+window.addEventListener('load', addOcrButtonsToImages);
+
+// 页面动态变化时也添加按钮（使用MutationObserver监听DOM变化）
+const observer = new MutationObserver((mutations) => {
+  mutations.forEach((mutation) => {
+    if (mutation.addedNodes.length) {
+      // 检查新添加的节点是否包含图片，如果是则添加OCR按钮
+      mutation.addedNodes.forEach((node) => {
+        if (node.nodeType === 1) { // 元素节点
+          if (node.tagName === 'IMG') {
+            addOcrButtonToImage(node);
+          } else {
+            const images = node.querySelectorAll('img');
+            if (images.length > 0) {
+              images.forEach(img => addOcrButtonToImage(img));
+            }
+          }
+        }
+      });
+    }
+  });
+});
+
+// 开始监听DOM变化
+observer.observe(document.body, { childList: true, subtree: true });
+
+// 向页面中所有图片添加OCR按钮
+function addOcrButtonsToImages() {
+  const images = document.querySelectorAll('img');
+  images.forEach(img => addOcrButtonToImage(img));
+}
+
+// 为单个图片添加OCR按钮
+function addOcrButtonToImage(img) {
+  // 跳过太小的图片（例如小于50x50像素）
+  if (img.width < 50 || img.height < 50) {
+    return;
+  }
+
+  // 检查是否已有OCR按钮
+  const existingButton = img.nextElementSibling;
+  if (existingButton && existingButton.classList.contains('ocr-float-button')) {
+    return;
+  }
+
+  // 创建OCR浮动按钮
+  const ocrButton = document.createElement('div');
+  ocrButton.className = 'ocr-float-button';
+  
+  // 使用SVG图标
+  const svgURL = chrome.runtime.getURL('images/icon.svg');
+  ocrButton.innerHTML = `<img src="${svgURL}" class="ocr-icon" alt="OCR">`;
+  
+  // 设置按钮的样式
+  ocrButton.style.cssText = `
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    background-color: rgba(0, 0, 0, 0.6);
+    color: white;
+    padding: 5px;
+    border-radius: 50%;
+    font-size: 12px;
+    cursor: pointer;
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  `;
+
+  // 设置图片容器的相对定位，以便正确放置OCR按钮
+  const imgStyle = window.getComputedStyle(img);
+  const imgParent = img.parentNode;
+  
+  // 创建一个包装容器
+  const wrapper = document.createElement('div');
+  wrapper.className = 'ocr-img-wrapper';
+  wrapper.style.cssText = `
+    position: relative;
+    display: inline-block;
+    width: ${img.width}px;
+    height: ${img.height}px;
+    margin: ${imgStyle.margin};
+    padding: ${imgStyle.padding};
+  `;
+
+  // 将图片替换为包装的图片和按钮
+  imgParent.insertBefore(wrapper, img);
+  wrapper.appendChild(img);
+  wrapper.appendChild(ocrButton);
+
+  // 鼠标悬停时显示OCR按钮
+  wrapper.addEventListener('mouseenter', function() {
+    ocrButton.style.opacity = '1';
+  });
+
+  wrapper.addEventListener('mouseleave', function() {
+    ocrButton.style.opacity = '0';
+  });
+
+  // 点击OCR按钮时处理图片
+  ocrButton.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    processImage(img.src);
+  });
+}
+
+// 处理图片OCR
+function processImage(imageUrl) {
+  // 显示加载中通知
+  showNotification('正在识别图片中的文字...');
+  
+  // 发送消息到background script处理OCR
+  chrome.runtime.sendMessage({
+    action: "processImage",
+    imageUrl: imageUrl
+  });
+}
+
 // 显示OCR结果
 function showOcrResult(text) {
   // 移除之前的结果框
@@ -202,3 +328,47 @@ function makeElementDraggable(element, dragHandle) {
     document.onmousemove = null;
   }
 }
+
+// 添加自定义样式到页面
+function addCustomStyles() {
+  const styleElement = document.createElement('style');
+  styleElement.textContent = `
+    .ocr-img-wrapper {
+      position: relative;
+      display: inline-block;
+    }
+    .ocr-float-button {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      background-color: rgba(0, 0, 0, 0.6);
+      color: white;
+      padding: 5px;
+      border-radius: 50%;
+      cursor: pointer;
+      z-index: 9999;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .ocr-float-button:hover {
+      background-color: rgba(0, 0, 0, 0.8);
+    }
+    .ocr-img-wrapper:hover .ocr-float-button {
+      opacity: 1;
+    }
+    .ocr-icon {
+      width: 16px;
+      height: 16px;
+      filter: invert(1);
+    }
+  `;
+  document.head.appendChild(styleElement);
+}
+
+// 添加自定义样式
+addCustomStyles();
