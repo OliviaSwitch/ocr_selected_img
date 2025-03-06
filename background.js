@@ -96,7 +96,9 @@ async function processImageUrl(imageUrl, tabId) {
       // 显示错误并移除处理中通知
       chrome.tabs.sendMessage(tabId, {
         action: "showNotification",
-        message: `OCR处理错误: ${error.message}`
+        message: `OCR处理错误: ${error.message}`,
+        notificationId: "ocr-processing-notification",
+        persistent: false
       });
     }
   });
