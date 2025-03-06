@@ -11,12 +11,33 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
-// 当页面加载完成后，添加悬浮OCR按钮到所有图片
-document.addEventListener('DOMContentLoaded', addOcrButtonsToImages);
+// 保存按钮启用状态
+let floatButtonEnabled = true;
+
+// 首先获取用户设置
+function loadUserSettings() {
+  chrome.storage.sync.get(['enableFloatButton'], function(data) {
+    // 如果设置存在且明确设为false则禁用按钮，否则默认启用
+    floatButtonEnabled = data.enableFloatButton !== false;
+    
+    // 加载设置后再添加按钮
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', addOcrButtonsToImages);
+    } else {
+      addOcrButtonsToImages();
+    }
+  });
+}
+
+// 页面加载后读取设置
+loadUserSettings();
 window.addEventListener('load', addOcrButtonsToImages);
 
 // 页面动态变化时也添加按钮（使用MutationObserver监听DOM变化）
 const observer = new MutationObserver((mutations) => {
+  // 如果悬浮按钮被禁用，则不添加按钮
+  if (!floatButtonEnabled) return;
+  
   mutations.forEach((mutation) => {
     if (mutation.addedNodes.length) {
       // 检查新添加的节点是否包含图片，如果是则添加OCR按钮
@@ -41,12 +62,18 @@ observer.observe(document.body, { childList: true, subtree: true });
 
 // 向页面中所有图片添加OCR按钮
 function addOcrButtonsToImages() {
+  // 如果悬浮按钮被禁用，则不添加按钮
+  if (!floatButtonEnabled) return;
+  
   const images = document.querySelectorAll('img');
   images.forEach(img => addOcrButtonToImage(img));
 }
 
 // 为单个图片添加OCR按钮
 function addOcrButtonToImage(img) {
+  // 如果悬浮按钮被禁用，则不添加按钮
+  if (!floatButtonEnabled) return;
+  
   // 跳过太小的图片（例如小于50x50像素）
   if (img.width < 50 || img.height < 50) {
     return;
@@ -154,6 +181,38 @@ function addOcrButtonToImage(img) {
     e.preventDefault();
     e.stopPropagation();
     processImage(img.src);
+  });
+}
+
+// 监听存储变化，实时更新悬浮按钮状态
+chrome.storage.onChanged.addListener(function(changes, namespace) {
+  if (changes.enableFloatButton && namespace === 'sync') {
+    const newValue = changes.enableFloatButton.newValue;
+    floatButtonEnabled = newValue !== false;
+    
+    // 如果禁用了按钮，移除所有现有按钮
+    if (!floatButtonEnabled) {
+      removeAllOcrButtons();
+    } else {
+      // 如果启用了按钮，重新添加按钮到所有图片
+      addOcrButtonsToImages();
+    }
+  }
+});
+
+// 移除所有OCR按钮
+function removeAllOcrButtons() {
+  // 移除所有OCR包装器和按钮
+  const wrappers = document.querySelectorAll('.ocr-img-wrapper');
+  wrappers.forEach(wrapper => {
+    // 获取图片元素
+    const img = wrapper.querySelector('img');
+    if (img) {
+      // 将图片移回原位置
+      wrapper.parentNode.insertBefore(img, wrapper);
+    }
+    // 移除包装器
+    wrapper.parentNode.removeChild(wrapper);
   });
 }
 

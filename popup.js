@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-  // 加载保存的设置
+  // 从存储中加载设置
   chrome.storage.sync.get(['apiUrl', 'customCookie', 'enableFloatButton'], function(data) {
     if (data.apiUrl) {
       document.getElementById('apiUrl').value = data.apiUrl;
@@ -8,44 +8,28 @@ document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('customCookie').value = data.customCookie;
     }
     
-    // 设置悬浮按钮启用状态
+    // 设置悬浮按钮复选框状态
     const enableFloatButton = document.getElementById('enableFloatButton');
-    if (data.enableFloatButton !== undefined) {
-      enableFloatButton.checked = data.enableFloatButton;
-    } else {
-      // 默认启用
-      enableFloatButton.checked = true;
-    }
+    // 如果设置明确为false则不勾选，否则默认勾选
+    enableFloatButton.checked = data.enableFloatButton !== false;
   });
 
-  // 保存设置按钮点击事件
+  // 保存设置
   document.getElementById('saveSettings').addEventListener('click', function() {
     const apiUrl = document.getElementById('apiUrl').value;
     const customCookie = document.getElementById('customCookie').value;
     const enableFloatButton = document.getElementById('enableFloatButton').checked;
-    
+
+    // 保存到存储
     chrome.storage.sync.set({
       apiUrl: apiUrl,
       customCookie: customCookie,
       enableFloatButton: enableFloatButton
     }, function() {
+      // 显示保存成功信息
       const savedMessage = document.getElementById('savedMessage');
       savedMessage.classList.remove('hidden');
-      
-      // 通知所有标签页更新悬浮按钮状态
-      chrome.tabs.query({}, function(tabs) {
-        tabs.forEach(function(tab) {
-          chrome.tabs.sendMessage(tab.id, { 
-            action: "updateFloatButtonStatus", 
-            enabled: enableFloatButton 
-          }).catch(err => {
-            // 忽略无法发送的标签页错误
-            console.log("无法发送到标签页:", tab.id);
-          });
-        });
-      });
-      
-      setTimeout(() => {
+      setTimeout(function() {
         savedMessage.classList.add('hidden');
       }, 2000);
     });
