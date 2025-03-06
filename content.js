@@ -74,6 +74,11 @@ function addOcrButtonToImage(img) {
   // 如果悬浮按钮被禁用，则不添加按钮
   if (!floatButtonEnabled) return;
   
+  // 如果图片不可见，则不添加OCR按钮
+  if (window.getComputedStyle(img).display === 'none') {
+    return;
+  }
+  
   // 跳过太小的图片（例如小于50x50像素）
   if (img.width < 50 || img.height < 50) {
     return;
